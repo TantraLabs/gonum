@@ -36,15 +36,15 @@ GLOBL l2nrodata<>+0(SB), RODATA, $24
 TEXT ·L2DistanceUnitary(SB), NOSPLIT, $0
 	MOVQ    x_base+0(FP), X_
 	MOVQ    y_base+24(FP), Y_
-	PXOR    ZERO, ZERO
+	XORPS    ZERO, ZERO
 	MOVQ    x_len+8(FP), LEN  // LEN = min( len(x), len(y) )
 	CMPQ    y_len+32(FP), LEN
 	CMOVQLE y_len+32(FP), LEN
 	CMPQ    LEN, $0           // if LEN == 0 { return 0 }
 	JZ      retZero
 
-	PXOR  INFMASK, INFMASK
-	PXOR  NANMASK, NANMASK
+	XORPS    INFMASK, INFMASK
+	XORPS    NANMASK, NANMASK
 	MOVSD $1.0, SUMSQ           // ssq = 1
 	XORPS SCALE, SCALE
 	MOVSD ABSMASK_DATA, ABSMASK
