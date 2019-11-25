@@ -124,12 +124,27 @@ func (s Stable) Quantile(p float64) float64 {
 }
 
 // Rand returns a random sample drawn from the distribution.
-//
-// TODO: Refer to http://math.bu.edu/people/mveillet/html/alphastablepub.html#1
-// USE: CMS and WW
 func (s Stable) Rand() float64 {
-	var rnd float64
-	return rnd
+	// TODO: Panic for invalid values of alpha, beta, sigma
+
+	// Generate using
+	//  Chambers, J.M., Mallows, C.L. and Stuck, B.W.. "A Method for Simulating
+	//  Stable Random Variables"
+	//  https://doi.org/10.1080%2F01621459.1976.10480344
+	//   use this reference: https://www.tandfonline.com/doi/abs/10.1080/01621459.1976.10480344
+
+	u := Uniform{Min: -math.Pi / 2, Max: math.Pi / 2, Src: s.Src}.Rand()
+	w := Exponential{Rate: 1, Src: s.Src}.Rand()
+	zeta := -s.Beta * math.Tan(math.Pi*s.Alpha/2)
+	if s.Alpha != 1 {
+		xi := (1 / s.Alpha) * math.Atan(-zeta)
+		stndrnd := math.Pow(1+math.Pow(zeta, 2), 1/(2*s.Alpha)) * (math.Sin(s.Alpha*(u+xi)) / math.Pow(math.Cos(u), 1/s.Alpha)) * math.Pow(math.Cos(u-s.Alpha*(u+xi))/w, (1-s.Alpha)/s.Alpha)
+		return s.Sigma*stndrnd + s.Mu
+	} else {
+		xi := math.Pi / 2
+		stndrnd := (1 / xi) * ((xi+s.Beta*u)*math.Tan(u) - s.Beta*math.Log(w*math.Cos(u)/(xi+s.Beta*u)))
+		return s.Sigma*stndrnd + s.Mu + (2/math.Pi)*s.Beta*s.Sigma*math.Log(s.Sigma)
+	}
 }
 
 // Score returns the score function with respect to the parameters of the
