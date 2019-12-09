@@ -59,7 +59,10 @@ func (s Stable) ExKurtosis() float64 {
 // data samples x with relative weights w. If weights is nil, then all the weights
 // are 1. If weights is not nil, then the len(weights) must equal len(samples).
 //
-// TODO:
+// Fit to data using: http://auapps.american.edu/jpnolan/www/stable/mle.pdf
+//
+// TODO: Easiest way is likely to call libstable C library with cgo
+// For references, see http://www.lpi.tel.uva.es/stable and https://golang.org/cmd/cgo/
 func (s *Stable) Fit(samples, weights []float64) {
 }
 
@@ -131,7 +134,7 @@ func (s Stable) Rand() float64 {
 	//  Chambers, J.M., Mallows, C.L. and Stuck, B.W.. "A Method for Simulating
 	//  Stable Random Variables"
 	//  https://doi.org/10.1080%2F01621459.1976.10480344
-	//   use this reference: https://www.tandfonline.com/doi/abs/10.1080/01621459.1976.10480344
+	//  use this reference: https://www.tandfonline.com/doi/abs/10.1080/01621459.1976.10480344
 
 	u := Uniform{Min: -math.Pi / 2, Max: math.Pi / 2, Src: s.Src}.Rand()
 	w := Exponential{Rate: 1, Src: s.Src}.Rand()
