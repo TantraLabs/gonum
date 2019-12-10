@@ -10,6 +10,25 @@ import (
 	"golang.org/x/exp/rand"
 )
 
+// #cgo LDFLAGS: -lgsl
+// #include "./libs/libstable/stable/src/mcculloch.c"
+// #include "./libs/libstable/stable/src/mcculloch.h"
+// #include "./libs/libstable/stable/src/methods.c"
+// #include "./libs/libstable/stable/src/methods.h"
+// #include "./libs/libstable/stable/src/stable_cdf.c"
+// #include "./libs/libstable/stable/src/stable_common.c"
+// #include "./libs/libstable/stable/src/stable_dist.c"
+// #include "./libs/libstable/stable/src/stable_fit.c"
+// #include "./libs/libstable/stable/src/stable_fit.h"
+// #include "./libs/libstable/stable/src/stable_integration.c"
+// #include "./libs/libstable/stable/src/stable_integration.h"
+// #include "./libs/libstable/stable/src/stable_koutrouvelis.c"
+// #include "./libs/libstable/stable/src/stable_pdf.c"
+// #include "./libs/libstable/stable/src/stable_q.c"
+// #include "./libs/libstable/stable/src/stable_rnd.c"
+// #include "./libs/libstable/stable/src/stable.h"
+import "C"
+
 // StandardStable returns an instantiation of the stable distribution with Mu = 0 and Sigma = 1.
 func StandardStable(alpha float64, beta float64) Stable {
 	return Stable{Alpha: alpha, Beta: beta, Mu: 0, Sigma: 1}
@@ -61,9 +80,29 @@ func (s Stable) ExKurtosis() float64 {
 //
 // Fit to data using: http://auapps.american.edu/jpnolan/www/stable/mle.pdf
 //
+// NOTE: Ignoring weights for now ...
+//
 // TODO: Easiest way is likely to call libstable C library with cgo
 // For references, see http://www.lpi.tel.uva.es/stable and https://golang.org/cmd/cgo/
 func (s *Stable) Fit(samples, weights []float64) {
+	// Safely build the C.double version of samples slice
+	n := len(samples)
+	cs := make([]C.double, n)
+	for i, sample := range samples {
+		cs[i] = C.double(sample)
+	}
+
+	// Create initial stable dist and fit iterative to samples
+	dist := C.stable_create(1.0, 0.0, 1.0, 0.0, 0) // TODO: check if parameterization should be 0 or 1 for us
+	if status := C.stable_fit(dist, &(cs[0]), C.uint(n)); int(status) > 0 {
+		panic("fit: an error occured on iterative procedure")
+	}
+
+	// Set the fitted values for params
+	s.Alpha = float64(dist.alpha)
+	s.Beta = float64(dist.beta)
+	s.Mu = float64(dist.mu_0) // TODO: check if parameterization should be 0 or 1 for us
+	s.Sigma = float64(dist.sigma)
 }
 
 // LogProb computes the natural logarithm of the value of the probability density function at x.
