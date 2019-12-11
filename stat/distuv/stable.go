@@ -5,6 +5,7 @@
 package distuv
 
 import (
+	"log"
 	"math"
 
 	"golang.org/x/exp/rand"
@@ -109,6 +110,7 @@ func (s *Stable) Fit(samples, weights []float64) {
 	s.Beta = float64(dist.beta)
 	s.Mu = float64(dist.mu_1)
 	s.Sigma = float64(dist.sigma)
+	log.Println(s)
 }
 
 // LogProb computes the natural logarithm of the value of the probability density function at x.
