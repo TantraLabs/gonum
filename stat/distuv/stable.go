@@ -10,7 +10,7 @@ import (
 	"golang.org/x/exp/rand"
 )
 
-// #cgo LDFLAGS: -lgsl
+// #cgo LDFLAGS: -lgsl -lgslcblas
 // #include "./libs/libstable/stable/src/mcculloch.c"
 // #include "./libs/libstable/stable/src/mcculloch.h"
 // #include "./libs/libstable/stable/src/methods.c"
@@ -79,12 +79,11 @@ func (s Stable) ExKurtosis() float64 {
 // are 1. If weights is not nil, then the len(weights) must equal len(samples).
 //
 // Fit to data using: http://auapps.american.edu/jpnolan/www/stable/mle.pdf
-//
-// NOTE: Ignoring weights for now ...
-//
-// TODO: Easiest way is likely to call libstable C library with cgo
+// Adapted from libstable/matlab/stable_fit_mle2dC.m
+// NOTE: Be sure to install gsl (e.g. brew install gsl)
 // For references, see http://www.lpi.tel.uva.es/stable and https://golang.org/cmd/cgo/
 func (s *Stable) Fit(samples, weights []float64) {
+	// NOTE: Ignoring weights for now ...
 	// Safely build the C.double version of samples slice
 	n := len(samples)
 	cs := make([]C.double, n)
@@ -92,16 +91,23 @@ func (s *Stable) Fit(samples, weights []float64) {
 		cs[i] = C.double(sample)
 	}
 
-	// Create initial stable dist and fit iterative to samples
-	dist := C.stable_create(1.0, 0.0, 1.0, 0.0, 0) // TODO: check if parameterization should be 0 or 1 for us
+	// Create initial stable dist from existing s params
+	dist := C.stable_create(C.double(s.Alpha), C.double(s.Beta), C.double(s.Sigma), C.double(s.Mu), 1) // Parametrization is 1 in Chambers, J.M., Mallows, C.L. and Stuck, B.W.
+
+	// Set config vals
+	C.stable_set_THREADS(0)
+	C.stable_set_relTOL(1e-8)
+	C.stable_set_absTOL(1e-8)
+
+	// Fit iterative to samples
 	if status := C.stable_fit(dist, &(cs[0]), C.uint(n)); int(status) > 0 {
-		panic("fit: an error occured on iterative procedure")
+		panic("stable fit: an error occured on iterative procedure")
 	}
 
 	// Set the fitted values for params
 	s.Alpha = float64(dist.alpha)
 	s.Beta = float64(dist.beta)
-	s.Mu = float64(dist.mu_0) // TODO: check if parameterization should be 0 or 1 for us
+	s.Mu = float64(dist.mu_1)
 	s.Sigma = float64(dist.sigma)
 }
 
