@@ -6,6 +6,7 @@ package distuv
 
 import (
 	"log"
+	"math"
 	"testing"
 
 	"golang.org/x/exp/rand"
@@ -60,4 +61,27 @@ func TestStableFit(t *testing.T) {
 	log.Println(dist)
 
 	// TODO: Check param values are within tolerance range
+}
+
+func TestStableQuantile(t *testing.T) {
+	// Pick init dist
+	alpha := 1.4
+	beta := 0.1
+	mu := 0.02
+	sigma := 0.05
+	src := rand.New(rand.NewSource(1000))
+	dist := Stable{
+		Alpha: alpha,
+		Beta:  beta,
+		Mu:    mu,
+		Sigma: sigma,
+		Src:   src,
+	}
+	z := dist.Quantile(0.99)
+	want := 0.53237
+	tol := 1e-6
+
+	if math.Abs(want-z) > tol {
+		t.Errorf("test-quantile: got=%e. want=%e", z, want)
+	}
 }

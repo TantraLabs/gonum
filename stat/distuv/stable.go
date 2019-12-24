@@ -163,12 +163,25 @@ func (s Stable) Prob(x float64) float64 {
 
 // Quantile returns the inverse of the cumulative probability distribution.
 //
-// TODO:
+// Adapted from libstable/matlab/stable_invC.m
+// NOTE: Be sure to install gsl (e.g. brew install gsl)
+// For references, see http://www.lpi.tel.uva.es/stable and https://golang.org/cmd/cgo/
 func (s Stable) Quantile(p float64) float64 {
 	if p < 0 || p > 1 {
 		panic(badPercentile)
 	}
-	return 0
+
+	// Create initial stable dist from existing s params
+	dist := C.stable_create(C.double(s.Alpha), C.double(s.Beta), C.double(s.Sigma), C.double(s.Mu), 1) // Parametrization is 1 in Chambers, J.M., Mallows, C.L. and Stuck, B.W.
+
+	// Set config vals
+	C.stable_set_THREADS(0)
+	C.stable_set_relTOL(1e-12)
+	C.stable_set_absTOL(1e-16)
+	C.stable_set_INV_MAXITER(50)
+
+	// Determine and return CDF^-1 value
+	return float64(C.stable_q_point(dist, C.double(p), nil))
 }
 
 // Rand returns a random sample drawn from the distribution.
