@@ -269,8 +269,8 @@ func (s Stable) Survival(x float64) float64 {
 	return 0
 }
 
-// setParameters modifies the parameters of the distribution.
-func (s *Stable) setParameters(p []Parameter) {
+// SetParameters modifies the parameters of the distribution.
+func (s *Stable) SetParameters(p []Parameter) {
 	if len(p) != s.NumParameters() {
 		panic("stable: incorrect number of parameters to set")
 	}
